@@ -29,8 +29,14 @@ BRAND_JS = """\
     }
     const btnStyle = btn ? window.getComputedStyle(btn) : null;
 
+    // Find a secondary color from links or other accents
+    const link = document.querySelector('a[href]:not([href="#"]):not([href=""])');
+    const linkStyle = link ? window.getComputedStyle(link) : null;
+    const secondaryColor = linkStyle ? rgbToHex(linkStyle.color) : '';
+
     return {
         primary: btnStyle ? rgbToHex(btnStyle.backgroundColor) : '',
+        secondary: secondaryColor,
         background: rgbToHex(bodyStyle.backgroundColor),
         text: rgbToHex(bodyStyle.color),
         fontFamily: bodyStyle.fontFamily,
