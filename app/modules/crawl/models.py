@@ -14,15 +14,19 @@ _DYNAMIC_ID_RE = re.compile(
     r"\[id=['\"]?[:_]?[A-Za-z0-9_]*[:_][A-Za-z0-9_]{3,}['\"]?\]"
 )
 _REACT_ID_RE = re.compile(r"\[id=['\"]?:r\d+:['\"]?\]")
-_HASH_CLASS_RE = re.compile(r"\.[a-zA-Z][\w]*-[a-zA-Z][\w]*-[a-zA-Z0-9]{4,}")
+_HASH_CLASS_RE = re.compile(
+    r"\.[a-zA-Z][\w]*-[a-zA-Z][\w]*-(?=[a-zA-Z0-9]*[0-9])(?=[a-zA-Z0-9]*[a-zA-Z])[a-zA-Z0-9]{4,}"
+)
 
 
 class Step(BaseModel):
     element: str
+    text: str | None = None
     title: str
     description: str
     side: Literal["top", "bottom", "left", "right"] = "bottom"
     navigates: bool = True
+    dynamic: bool = False
 
     @field_validator("element")
     @classmethod
@@ -60,9 +64,25 @@ class WorkflowsResponse(BaseModel):
     workflows: list[Workflow]
 
 
+class WorkflowSpec(BaseModel):
+    name: str
+    description: str
+
+
+class DiscoveryResponse(BaseModel):
+    workflows: list[WorkflowSpec]
+
+
 class CrawlRequest(BaseModel):
     url: HttpUrl
     query: str | None = None
+    credentials: dict[str, str] | None = None
+    cookies_file: str | None = None
+
+
+class QueryRequest(BaseModel):
+    url: HttpUrl
+    query: str
     credentials: dict[str, str] | None = None
     cookies_file: str | None = None
 
