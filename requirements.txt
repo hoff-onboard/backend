@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+browser-use
+langchain-openai
+langchain-anthropic
+pydantic
+pydantic-settings
+python-dotenv
