@@ -28,6 +28,7 @@ class Step(BaseModel):
     title: str
     description: str
     side: Literal["top", "bottom", "left", "right"] = "bottom"
+    navigates: bool = True
 
     @field_validator("element")
     @classmethod

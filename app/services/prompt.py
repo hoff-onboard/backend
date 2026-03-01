@@ -38,6 +38,7 @@ STEP_INSTRUCTIONS = """\
       in your output JSON.
    d. If `resolve_selector` returns an error, pick a different element and try again.
    e. Do NOT write CSS selectors manually — always use `resolve_selector`.\
+   c. For the navigates field, return True if the step navigates to a new page, False otherwise.
 """
 
 AUTH_INSTRUCTIONS = """\
