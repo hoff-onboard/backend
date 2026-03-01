@@ -12,7 +12,7 @@ import re
 
 from browser_use import BrowserSession
 
-from app.models.responses import Step, Workflow, WorkflowsResponse
+from app.modules.crawl.models import Step, Workflow, WorkflowsResponse
 
 logger = logging.getLogger(__name__)
 
@@ -137,8 +137,6 @@ async def validate_workflows(
             if browser_session is not None:
                 exists = await _selector_exists_in_dom(browser_session, selector)
                 if exists is None:
-                    # Check itself failed (page error) — try querySelector
-                    # to at least validate syntax
                     logger.warning(
                         "Could not verify DOM presence for step %r selector %r "
                         "(page may have navigated away); keeping step",

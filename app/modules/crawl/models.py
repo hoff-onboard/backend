@@ -1,7 +1,9 @@
 import re
 from typing import Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, HttpUrl, field_validator
+
+from app.modules.branding.models import Brand
 
 # Patterns that must never appear in a CSS selector value
 _PLAYWRIGHT_PSEUDO_RE = re.compile(r":has-text\(|:text\(|>>|:visible", re.IGNORECASE)
@@ -13,14 +15,6 @@ _DYNAMIC_ID_RE = re.compile(
 )
 _REACT_ID_RE = re.compile(r"\[id=['\"]?:r\d+:['\"]?\]")
 _HASH_CLASS_RE = re.compile(r"\.[a-zA-Z][\w]*-[a-zA-Z][\w]*-[a-zA-Z0-9]{4,}")
-
-
-class Brand(BaseModel):
-    primary: str
-    background: str
-    text: str
-    fontFamily: str
-    borderRadius: str
 
 
 class Step(BaseModel):
@@ -64,6 +58,13 @@ class Workflow(BaseModel):
 
 class WorkflowsResponse(BaseModel):
     workflows: list[Workflow]
+
+
+class CrawlRequest(BaseModel):
+    url: HttpUrl
+    query: str | None = None
+    credentials: dict[str, str] | None = None
+    cookies_file: str | None = None
 
 
 class CrawlResponse(BaseModel):

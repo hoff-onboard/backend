@@ -1,37 +1,21 @@
-import asyncio
 import logging
-from datetime import datetime, timezone
-from pathlib import Path
-from urllib.parse import urlparse
 
 from browser_use import Agent, BrowserSession, Tools
 from browser_use.dom.views import DEFAULT_INCLUDE_ATTRIBUTES
 
+from app.agents.crawler.prompt import SYSTEM_PROMPT, build_task_prompt
 from app.config import get_settings
-from app.models.responses import CrawlResponse, WorkflowsResponse
-from app.services.branding import extract_brand
+from app.modules.crawl.models import WorkflowsResponse
+from app.modules.crawl.selector import register_resolve_selector
+from app.modules.crawl.validate import validate_workflows
 from app.services.llm import get_llm
-from app.services.prompt import SYSTEM_PROMPT, build_task_prompt
-from app.services.selector import register_resolve_selector
-from app.services.validate import validate_workflows
 
 logger = logging.getLogger(__name__)
-
-OUTPUTS_DIR = Path("outputs")
 
 INCLUDE_ATTRIBUTES = DEFAULT_INCLUDE_ATTRIBUTES + ["href", "class", "data-testid"]
 
 
-def _save_output(url: str, result: CrawlResponse) -> Path:
-    OUTPUTS_DIR.mkdir(exist_ok=True)
-    domain = urlparse(url).hostname or "unknown"
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
-    path = OUTPUTS_DIR / f"{domain}_{timestamp}.json"
-    path.write_text(result.model_dump_json(indent=2))
-    return path
-
-
-async def _run_workflow_agent(
+async def run_workflow_agent(
     url: str,
     query: str | None,
     credentials: dict[str, str] | None,
@@ -80,28 +64,5 @@ async def _run_workflow_agent(
     # Layer 3: post-processing validation (syntax + DOM presence)
     session = browser_session or agent.browser_session
     result = await validate_workflows(result, browser_session=session)
-
-    return result
-
-
-async def run_crawl_agent(
-    url: str,
-    query: str | None = None,
-    credentials: dict[str, str] | None = None,
-    cookies_file: str | None = None,
-) -> CrawlResponse:
-    # Run branding extraction and workflow agent in parallel
-    brand_task = extract_brand(url, cookies_file)
-    workflow_task = _run_workflow_agent(url, query, credentials, cookies_file)
-
-    brand, workflows = await asyncio.gather(brand_task, workflow_task)
-
-    result = CrawlResponse(
-        url=str(url),
-        brand=brand,
-        workflows=workflows.workflows,
-    )
-
-    _save_output(url, result)
 
     return result
