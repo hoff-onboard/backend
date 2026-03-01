@@ -67,6 +67,12 @@ class CrawlRequest(BaseModel):
     cookies_file: str | None = None
 
 
+class QueryRequest(BaseModel):
+    url: HttpUrl
+    query: str
+    cookies: list[dict] | None = None
+
+
 class CrawlResponse(BaseModel):
     url: str
     brand: Brand
