@@ -5,10 +5,19 @@ from app.modules.crawl.models import CrawlResponse
 from app.services.mongodb import get_db
 
 
-async def save_workflows(result: CrawlResponse) -> None:
+async def save_workflows(
+    result: CrawlResponse,
+    screenshots_map: dict[int, list[str]] | None = None,
+) -> None:
     db = get_db()
     domain = urlparse(result.url).hostname or "unknown"
     new_wf_dicts = [w.model_dump() for w in result.workflows]
+
+    # Attach screenshots to workflow dicts
+    if screenshots_map:
+        for idx, wf_dict in enumerate(new_wf_dicts):
+            if idx in screenshots_map:
+                wf_dict["screenshots"] = screenshots_map[idx]
 
     doc = await db.workflows.find_one({"domain": domain})
 
