@@ -71,3 +71,4 @@ class CrawlResponse(BaseModel):
     url: str
     brand: Brand
     workflows: list[Workflow]
+    skills: dict[str, str]
