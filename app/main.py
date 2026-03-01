@@ -1,11 +1,22 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.crawl import router as crawl_router
 from app.routers.query import router as query_router
 from app.routers.stream import router as stream_router
+from app.services.mongodb import close_db, ensure_indexes
 
-app = FastAPI(title="Hoff", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await ensure_indexes()
+    yield
+    await close_db()
+
+
+app = FastAPI(title="Hoff", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

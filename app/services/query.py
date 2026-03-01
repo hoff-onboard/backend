@@ -61,4 +61,10 @@ async def run_query_agent(
     result = CrawlResponse(url=str(url), brand=brand, workflows=workflows)
     _save_output(url, result)
 
+    try:
+        from app.services.workflows_repo import save_workflows
+        await save_workflows(result)
+    except Exception:
+        logger.exception("Failed to save workflows to MongoDB")
+
     return result

@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.modules.crawl.models import CrawlResponse, QueryRequest
 from app.services.query import run_query_agent
+from app.services.workflows_repo import get_workflows_by_domain
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -35,3 +36,11 @@ async def query(request: QueryRequest):
     except Exception as e:
         logger.exception("POST /query failed")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/workflows/{domain}")
+async def get_workflows(domain: str):
+    doc = await get_workflows_by_domain(domain)
+    if not doc:
+        raise HTTPException(status_code=404, detail="No workflows found for this domain")
+    return doc

@@ -41,7 +41,7 @@ async def run_extraction_agent(
     tools = Tools()
     register_resolve_selector(tools)
 
-    browser_session = BrowserSession(storage_state=cookies_file, user_data_dir=None) if cookies_file else None
+    browser_session = BrowserSession(storage_state=cookies_file, user_data_dir=None, headless=True) if cookies_file else BrowserSession(headless=True)
 
     agent_kwargs: dict = dict(
         task=task,
@@ -54,8 +54,7 @@ async def run_extraction_agent(
 
     if credentials:
         agent_kwargs["sensitive_data"] = credentials
-    if browser_session:
-        agent_kwargs["browser_session"] = browser_session
+    agent_kwargs["browser_session"] = browser_session
 
     agent = Agent(**agent_kwargs)
     run_kwargs: dict = {}

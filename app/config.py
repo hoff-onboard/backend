@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
+    MONGODB_URI: str = ""
     MINIMAX_API_KEY: str = ""
     MINIMAX_GROUP_ID: str = ""
 
