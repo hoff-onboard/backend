@@ -391,7 +391,10 @@ def register_resolve_selector(tools: Tools) -> None:
             return ActionResult(extracted_content="\n".join(lines))
 
         # --- No CSS candidates — try text-based fallback ---
-        text = element.get_all_children_text()
+        raw_text = element.get_all_children_text()
+        # Use only the first line — child nodes are joined with \n,
+        # and multi-line text won't match reliably via textContent.includes().
+        text = raw_text.split("\n")[0].strip() if raw_text else ""
         if text and len(text) <= 80:
             logger.info(
                 "resolve_selector index=%d → text fallback: "

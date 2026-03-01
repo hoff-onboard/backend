@@ -33,7 +33,6 @@ async def run_extraction_agent(
         url,
         spec.name,
         spec.description,
-        credential_keys=list(credentials.keys()) if credentials else None,
         research_steps=research_context.steps if research_context else None,
     )
 

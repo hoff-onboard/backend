@@ -85,6 +85,7 @@ class QueryRequest(BaseModel):
     query: str
     cookies: list[dict] | None = None
     origins: list[dict] | None = None
+    use_research: bool = False
 
 
 class CrawlResponse(BaseModel):

@@ -29,20 +29,24 @@ async def run_query_agent(
     query: str,
     credentials: dict[str, str] | None = None,
     cookies_file: str | None = None,
+    use_research: bool = False,
 ) -> CrawlResponse:
     settings = get_settings()
 
     # Start branding immediately — runs throughout
     brand_task = asyncio.create_task(extract_brand(url, cookies_file))
 
-    # Phase 1: Research — ask Gemini/Minimax what this workflow looks like
-    logger.info("Starting research for query=%r url=%r", query, url)
-    research = await research_workflow(url, query, settings, cookies_file)
-    logger.info("Research complete: description=%r steps=%s", research.description[:60], research.steps)
+    research = None
+    if use_research:
+        # Phase 1 (optional): Research — ask Gemini what this workflow looks like
+        logger.info("Starting research for query=%r url=%r", query, url)
+        research = await research_workflow(url, query, settings, cookies_file)
+        logger.info("Research complete: description=%r steps=%s", research.description[:60], research.steps)
 
-    # Phase 2: Single focused extraction guided by the research context
-    spec = WorkflowSpec(name=query, description=research.description)
-    logger.info("Starting extraction agent for workflow=%r", spec.name)
+    # Phase 2: Single focused extraction, optionally guided by research
+    description = research.description if research else ""
+    spec = WorkflowSpec(name=query, description=description)
+    logger.info("Starting extraction agent for workflow=%r (research=%s)", spec.name, use_research)
     workflow = await run_extraction_agent(
         url, spec, credentials, cookies_file, research_context=research
     )

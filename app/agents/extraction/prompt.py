@@ -39,17 +39,14 @@ For each step:
       how the UI is structured.
    h. Steps must use GENERIC selectors that work for any user/record, not selectors containing
       specific record IDs or instance-specific data.
-"""
-
-_AUTH_INSTRUCTIONS = """\
-**Log in first.** Use the following credential keys to fill in the login form:
-{credential_keys}
-After logging in successfully, proceed with extracting the workflow.\
+   i. If the user asks for a specific step (such as select a timeframe, date, or other specific data), you must extract the step. Otherwise, you should extract the entire workflow.
+   j. DO NOT SKIP STEPS. For example: if you have a drop down menu with options, you must add a step to click on the dropdown and another different step to select an option.
 """
 
 _OUTPUT_INSTRUCTIONS = """\
 Return the result strictly matching the requested JSON schema with exactly 1 workflow. \
 Do not add commentary outside the JSON.\
+Continue extracting the workflow until you have extracted all the steps necessary to respoond to the query.
 """
 
 
@@ -57,14 +54,8 @@ def build_task_prompt(
     url: str,
     spec_name: str,
     spec_description: str,
-    credential_keys: list[str] | None = None,
     research_steps: list[str] | None = None,
 ) -> str:
-    auth_section = ""
-    if credential_keys:
-        keys_list = ", ".join(f"`{k}`" for k in credential_keys)
-        auth_section = _AUTH_INSTRUCTIONS.format(credential_keys=keys_list) + "\n\n"
-
     research_section = ""
     if research_steps:
         numbered = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(research_steps))
@@ -77,6 +68,6 @@ Navigate to {url} and extract the following onboarding workflow:
   Name: {spec_name}
   Description: {spec_description}
 
-{research_section}{auth_section}{_STEP_INSTRUCTIONS}
+{research_section}{_STEP_INSTRUCTIONS}
 
 {_OUTPUT_INSTRUCTIONS}"""

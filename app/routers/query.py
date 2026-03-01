@@ -32,6 +32,7 @@ async def query(request: QueryRequest):
             str(request.url),
             request.query,
             cookies_file=cookies_file,
+            use_research=request.use_research,
         )
     except Exception as e:
         logger.exception("POST /query failed")
