@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.modules.crawl.models import CrawlResponse, QueryRequest
 from app.services.query import run_query_agent
-from app.services.workflows_repo import get_workflows_by_domain
+from app.services.workflows_repo import get_workflows_by_domain, soft_delete_workflow
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -44,3 +44,11 @@ async def get_workflows(domain: str):
     if not doc:
         raise HTTPException(status_code=404, detail="No workflows found for this domain")
     return doc
+
+
+@router.delete("/workflows/{domain}/{workflow_name}")
+async def delete_workflow(domain: str, workflow_name: str):
+    deleted = await soft_delete_workflow(domain, workflow_name)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    return {"status": "deleted"}

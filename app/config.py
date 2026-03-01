@@ -8,6 +8,7 @@ _DEFAULT_MODELS = {
     "browser-use": "browser-use/browser-use-default",
     "openai": "gpt-4o",
     "anthropic": "claude-sonnet-4-0",
+    "gemini": "gemini-flash-latest",
 }
 
 _DEFAULT_RESEARCH_MODELS = {
@@ -17,7 +18,7 @@ _DEFAULT_RESEARCH_MODELS = {
 
 
 class Settings(BaseSettings):
-    LLM_PROVIDER: Literal["browser-use", "openai", "anthropic"] = "browser-use"
+    LLM_PROVIDER: Literal["browser-use", "openai", "anthropic", "gemini"] = "browser-use"
     LLM_MODEL: str | None = None
 
     RESEARCH_PROVIDER: Literal["gemini", "minimax"] = "gemini"

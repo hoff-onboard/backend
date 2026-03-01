@@ -22,4 +22,9 @@ def get_llm(settings: Settings) -> BaseChatModel:
 
         return ChatAnthropic(model=model)
 
+    if provider == "gemini":
+        from browser_use import ChatGoogle
+
+        return ChatGoogle(model=model)
+
     raise ValueError(f"Unknown LLM provider: {provider}")

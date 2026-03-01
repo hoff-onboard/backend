@@ -37,4 +37,16 @@ async def save_workflows(result: CrawlResponse) -> None:
 
 async def get_workflows_by_domain(domain: str) -> dict | None:
     db = get_db()
-    return await db.workflows.find_one({"domain": domain}, {"_id": 0})
+    doc = await db.workflows.find_one({"domain": domain}, {"_id": 0})
+    if doc:
+        doc["workflows"] = [w for w in doc.get("workflows", []) if not w.get("deleted")]
+    return doc
+
+
+async def soft_delete_workflow(domain: str, workflow_name: str) -> bool:
+    db = get_db()
+    result = await db.workflows.update_one(
+        {"domain": domain, "workflows.name": workflow_name},
+        {"$set": {"workflows.$.deleted": True, "updated_at": datetime.now(timezone.utc)}},
+    )
+    return result.modified_count > 0
