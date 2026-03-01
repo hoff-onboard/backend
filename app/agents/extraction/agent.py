@@ -1,11 +1,14 @@
 import logging
+from collections.abc import Callable
+from typing import Any
 
 from browser_use import Agent, BrowserSession, Tools
 from browser_use.dom.views import DEFAULT_INCLUDE_ATTRIBUTES
 
-from app.agents.crawler.prompt import SYSTEM_PROMPT, build_task_prompt
+from app.agents.extraction.prompt import SYSTEM_PROMPT, build_task_prompt
 from app.config import get_settings
-from app.modules.crawl.models import WorkflowsResponse
+from app.modules.crawl.models import Workflow, WorkflowSpec, WorkflowsResponse
+from app.modules.research.models import ResearchContext
 from app.modules.crawl.selector import register_resolve_selector
 from app.modules.crawl.validate import validate_workflows
 from app.services.llm import get_llm
@@ -15,26 +18,30 @@ logger = logging.getLogger(__name__)
 INCLUDE_ATTRIBUTES = DEFAULT_INCLUDE_ATTRIBUTES + ["href", "class", "data-testid"]
 
 
-async def run_workflow_agent(
+async def run_extraction_agent(
     url: str,
-    query: str | None,
+    spec: WorkflowSpec,
     credentials: dict[str, str] | None,
     cookies_file: str | None,
-) -> WorkflowsResponse:
+    research_context: ResearchContext | None = None,
+    on_step_end: Callable[[Agent], Any] | None = None,
+) -> Workflow | None:
     settings = get_settings()
     llm = get_llm(settings)
 
     task = build_task_prompt(
         url,
-        query,
+        spec.name,
+        spec.description,
         credential_keys=list(credentials.keys()) if credentials else None,
+        research_steps=research_context.steps if research_context else None,
     )
 
     # Layer 1: register the resolve_selector custom action
     tools = Tools()
     register_resolve_selector(tools)
 
-    browser_session = BrowserSession(storage_state=cookies_file) if cookies_file else None
+    browser_session = BrowserSession(storage_state=cookies_file, user_data_dir=None) if cookies_file else None
 
     agent_kwargs: dict = dict(
         task=task,
@@ -47,16 +54,19 @@ async def run_workflow_agent(
 
     if credentials:
         agent_kwargs["sensitive_data"] = credentials
-
     if browser_session:
         agent_kwargs["browser_session"] = browser_session
 
     agent = Agent(**agent_kwargs)
-    history = await agent.run()
+    run_kwargs: dict = {}
+    if on_step_end:
+        run_kwargs["on_step_end"] = on_step_end
+    history = await agent.run(**run_kwargs)
 
     raw = history.final_result()
     if not raw:
-        raise RuntimeError("Agent returned no result")
+        logger.warning("Extraction agent returned no result for workflow: %s", spec.name)
+        return None
 
     # Layer 2: Pydantic field validator runs inside model_validate_json
     result = WorkflowsResponse.model_validate_json(raw)
@@ -65,4 +75,8 @@ async def run_workflow_agent(
     session = browser_session or agent.browser_session
     result = await validate_workflows(result, browser_session=session)
 
-    return result
+    if not result.workflows:
+        logger.warning("No valid steps after validation for workflow: %s", spec.name)
+        return None
+
+    return result.workflows[0]

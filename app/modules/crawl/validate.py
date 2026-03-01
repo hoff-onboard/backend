@@ -26,7 +26,9 @@ _BAD_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("Positional selector", re.compile(r":nth-child\(|:nth-of-type\(|:first-child|:last-child", re.IGNORECASE)),
     ("Dynamic ID", re.compile(r"\[id=['\"]?[:_]?[A-Za-z0-9_]*[:_][A-Za-z0-9_]{3,}['\"]?\]")),
     ("React-style ID", re.compile(r"\[id=['\"]?:r\d+:['\"]?\]")),
-    ("Hash class name", re.compile(r"\.[a-zA-Z][\w]*-[a-zA-Z][\w]*-[a-zA-Z0-9]{4,}")),
+    ("Hash class name", re.compile(
+        r"\.[a-zA-Z][\w]*-[a-zA-Z][\w]*-(?=[a-zA-Z0-9]*[0-9])(?=[a-zA-Z0-9]*[a-zA-Z])[a-zA-Z0-9]{4,}"
+    )),
 ]
 
 
@@ -133,8 +135,8 @@ async def validate_workflows(
                 )
                 continue
 
-            # --- DOM presence check (best-effort) ---
-            if browser_session is not None:
+            # --- DOM presence check (best-effort, skip for text-based steps) ---
+            if browser_session is not None and not step.text:
                 exists = await _selector_exists_in_dom(browser_session, selector)
                 if exists is None:
                     logger.warning(
