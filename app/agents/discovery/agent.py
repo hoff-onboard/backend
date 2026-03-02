@@ -7,7 +7,7 @@ from browser_use.dom.views import DEFAULT_INCLUDE_ATTRIBUTES
 
 from app.agents.discovery.prompt import SYSTEM_PROMPT, build_task_prompt
 from app.config import get_settings
-from app.modules.crawl.models import DiscoveryResponse, WorkflowSpec
+from app.domain.workflows.models import DiscoveryResponse, WorkflowSpec
 from app.services.llm import get_llm
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,11 @@ async def run_discovery_agent(
     llm = get_llm(settings)
     task = build_task_prompt(url, query)
 
-    browser_session = BrowserSession(storage_state=cookies_file, user_data_dir=None, headless=True) if cookies_file else BrowserSession(headless=True)
+    browser_session = (
+        BrowserSession(storage_state=cookies_file, user_data_dir=None, headless=True)
+        if cookies_file
+        else BrowserSession(headless=True)
+    )
 
     agent_kwargs: dict = dict(
         task=task,

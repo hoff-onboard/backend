@@ -1,24 +1,9 @@
-from motor.motor_asyncio import AsyncIOMotorClient
+"""Backward-compatible re-export. Canonical location: app.infrastructure.persistence.mongodb.client"""
 
-from app.config import get_settings
+from app.infrastructure.persistence.mongodb.client import (
+    close_db,
+    ensure_indexes,
+    get_db,
+)
 
-_client: AsyncIOMotorClient | None = None
-
-
-def get_db():
-    global _client
-    if _client is None:
-        _client = AsyncIOMotorClient(get_settings().MONGODB_URI)
-    return _client.get_default_database()
-
-
-async def ensure_indexes():
-    db = get_db()
-    await db.workflows.create_index("domain", unique=True)
-
-
-async def close_db():
-    global _client
-    if _client:
-        _client.close()
-        _client = None
+__all__ = ["close_db", "ensure_indexes", "get_db"]

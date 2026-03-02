@@ -6,7 +6,7 @@ import httpx
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.config import Settings
-from app.modules.research.models import ResearchContext
+from app.domain.research.models import ResearchContext
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,11 @@ _MINIMAX_API_URL = "https://api.minimaxi.chat/v1/text/chatcompletion_v2"
 
 
 def _get_research_llm(settings: Settings):
-    logger.info("Initialising research LLM: provider=%r model=%r", settings.RESEARCH_PROVIDER, settings.resolved_research_model)
+    logger.info(
+        "Initialising research LLM: provider=%r model=%r",
+        settings.RESEARCH_PROVIDER,
+        settings.resolved_research_model,
+    )
 
     if settings.RESEARCH_PROVIDER == "gemini":
         from langchain_google_genai import ChatGoogleGenerativeAI
@@ -75,9 +79,7 @@ async def _minimax_chat(messages: list[dict], settings: Settings) -> str:
     status_code = base_resp.get("status_code", 0)
     if status_code != 0:
         status_msg = base_resp.get("status_msg", "unknown error")
-        raise RuntimeError(
-            f"MiniMax API error {status_code}: {status_msg}"
-        )
+        raise RuntimeError(f"MiniMax API error {status_code}: {status_msg}")
 
     choices = body.get("choices")
     if not choices:
@@ -130,5 +132,9 @@ async def research_workflow(
 
     logger.info("Research LLM raw content: %r", raw[:200])
     data = _parse_json(raw)
-    logger.info("Parsed research context: description=%r steps=%d", data.get("description", "")[:80], len(data.get("steps", [])))
+    logger.info(
+        "Parsed research context: description=%r steps=%d",
+        data.get("description", "")[:80],
+        len(data.get("steps", [])),
+    )
     return ResearchContext.model_validate(data)

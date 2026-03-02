@@ -11,7 +11,7 @@ import logging
 import re
 
 from app.config import Settings
-from app.modules.crawl.models import Step, Workflow
+from app.domain.workflows.models import Step, Workflow
 
 logger = logging.getLogger(__name__)
 
@@ -51,16 +51,22 @@ async def review_selectors(
 ) -> Workflow:
     """Classify each step's selector and flag dynamic ones."""
     steps_payload = [
-        {"index": i, "selector": s.element, "title": s.title, "description": s.description}
+        {
+            "index": i,
+            "selector": s.element,
+            "title": s.title,
+            "description": s.description,
+        }
         for i, s in enumerate(workflow.steps)
     ]
 
     user_content = (
-        f"Workflow: {workflow.name}\n\n"
-        f"Steps:\n{json.dumps(steps_payload, indent=2)}"
+        f"Workflow: {workflow.name}\n\nSteps:\n{json.dumps(steps_payload, indent=2)}"
     )
 
-    logger.info("Reviewing %d selectors for workflow=%r", len(workflow.steps), workflow.name)
+    logger.info(
+        "Reviewing %d selectors for workflow=%r", len(workflow.steps), workflow.name
+    )
 
     try:
         raw = await _call_research_llm(settings, user_content)
@@ -77,13 +83,19 @@ async def review_selectors(
         review = review_map.get(i)
         if review and review.get("classification") == "dynamic":
             generic_desc = review.get("generic_description") or step.description
-            updated_steps.append(step.model_copy(update={
-                "dynamic": True,
-                "description": generic_desc,
-            }))
+            updated_steps.append(
+                step.model_copy(
+                    update={
+                        "dynamic": True,
+                        "description": generic_desc,
+                    }
+                )
+            )
             logger.info(
                 "Flagged step %d %r as dynamic (selector=%r)",
-                i, step.title, step.element,
+                i,
+                step.title,
+                step.element,
             )
         else:
             updated_steps.append(step)
@@ -111,10 +123,12 @@ async def _call_research_llm(settings: Settings, user_content: str) -> str:
             model=settings.resolved_research_model,
             google_api_key=settings.GEMINI_API_KEY,
         )
-        response = await llm.ainvoke([
-            SystemMessage(content=_SYSTEM_PROMPT),
-            HumanMessage(content=user_content),
-        ])
+        response = await llm.ainvoke(
+            [
+                SystemMessage(content=_SYSTEM_PROMPT),
+                HumanMessage(content=user_content),
+            ]
+        )
         return response.content
 
     raise ValueError(f"Unknown research provider: {settings.RESEARCH_PROVIDER!r}")

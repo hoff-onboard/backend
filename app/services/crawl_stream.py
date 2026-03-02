@@ -14,7 +14,7 @@ from browser_use import Agent
 from app.agents.discovery.agent import run_discovery_agent
 from app.agents.extraction.agent import run_extraction_agent
 from app.modules.branding.extractor import extract_brand
-from app.modules.crawl.events import (
+from app.domain.workflows.events import (
     agent_thought_event,
     brand_event,
     done_event,
@@ -31,7 +31,9 @@ _MAX_SCREENSHOT_WIDTH = 800
 _SCREENSHOT_EVERY_N_STEPS = 3
 
 
-def _resize_screenshot_b64(b64_data: str, max_width: int = _MAX_SCREENSHOT_WIDTH) -> str:
+def _resize_screenshot_b64(
+    b64_data: str, max_width: int = _MAX_SCREENSHOT_WIDTH
+) -> str:
     """Resize a base64-encoded PNG screenshot to max_width, preserving aspect ratio."""
     try:
         from PIL import Image
@@ -71,7 +73,9 @@ async def stream_crawl(
             thoughts = agent.history.model_thoughts()
             if thoughts:
                 await event_queue.put(
-                    agent_thought_event(step_counter, str(thoughts[-1]), current_flow_index)
+                    agent_thought_event(
+                        step_counter, str(thoughts[-1]), current_flow_index
+                    )
                 )
         except Exception:
             logger.debug("Could not extract agent thought at step %d", step_counter)
@@ -81,7 +85,9 @@ async def stream_crawl(
             try:
                 from browser_use.browser.events import ScreenshotEvent
 
-                evt = agent.browser_session.event_bus.dispatch(ScreenshotEvent(full_page=False))
+                evt = agent.browser_session.event_bus.dispatch(
+                    ScreenshotEvent(full_page=False)
+                )
                 await evt
                 result = await evt.event_result(raise_if_any=False, raise_if_none=False)
                 if result:
@@ -100,7 +106,9 @@ async def stream_crawl(
         # --- Phase: discovery ---
         yield phase_event("discovery")
         yield log_event("Starting workflow discovery...")
-        specs = await run_discovery_agent(url, query, credentials, cookies_file, on_step_end=on_step_end)
+        specs = await run_discovery_agent(
+            url, query, credentials, cookies_file, on_step_end=on_step_end
+        )
 
         # Drain any queued events from discovery
         while not event_queue.empty():

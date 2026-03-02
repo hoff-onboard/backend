@@ -18,7 +18,9 @@ _DEFAULT_RESEARCH_MODELS = {
 
 
 class Settings(BaseSettings):
-    LLM_PROVIDER: Literal["browser-use", "openai", "anthropic", "gemini"] = "browser-use"
+    LLM_PROVIDER: Literal["browser-use", "openai", "anthropic", "gemini"] = (
+        "browser-use"
+    )
     LLM_MODEL: str | None = None
 
     RESEARCH_PROVIDER: Literal["gemini", "minimax"] = "gemini"

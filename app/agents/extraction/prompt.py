@@ -96,9 +96,7 @@ def build_task_prompt(
     research_section = ""
     if research_steps:
         numbered = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(research_steps))
-        research_section = (
-            f"Suggested navigation path (use as a reference, not a strict script):\n{numbered}\n\n"
-        )
+        research_section = f"Suggested navigation path (use as a reference, not a strict script):\n{numbered}\n\n"
 
     return f"""\
 Navigate to {url} and extract the following onboarding workflow:

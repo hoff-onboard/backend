@@ -1,10 +1,5 @@
-from pydantic import BaseModel
+"""Backward-compatible re-export. Canonical location: app.domain.branding.models"""
 
+from app.domain.branding.models import Brand
 
-class Brand(BaseModel):
-    primary: str
-    secondary: str = ""
-    background: str
-    text: str
-    fontFamily: str
-    borderRadius: str
+__all__ = ["Brand"]

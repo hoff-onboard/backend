@@ -33,9 +33,7 @@ _HASH_CLASS_RE = re.compile(
 
 # Hrefs containing record-specific IDs (Salesforce 15/18-char IDs, UUIDs,
 # long hex strings).
-_RECORD_ID_RE = re.compile(
-    r"[A-Za-z0-9]{15,18}|[0-9a-f]{8}-[0-9a-f]{4}-|[0-9a-f]{12,}"
-)
+_RECORD_ID_RE = re.compile(r"[A-Za-z0-9]{15,18}|[0-9a-f]{8}-[0-9a-f]{4}-|[0-9a-f]{12,}")
 
 # ---------------------------------------------------------------------------
 # Tailwind / utility class detection
@@ -89,46 +87,129 @@ _TAILWIND_PREFIX_RE = re.compile(
 )
 
 # Single-word utility classes that have no prefix-value pattern.
-_UTILITY_CLASSES = frozenset({
-    # Layout
-    "flex", "inline-flex", "block", "inline-block", "inline", "grid",
-    "inline-grid", "hidden", "relative", "absolute", "fixed", "sticky",
-    "static", "contents", "flow-root", "table", "inline-table",
-    # Flexbox / grid
-    "justify-center", "justify-between", "justify-start", "justify-end",
-    "justify-around", "justify-evenly", "items-center", "items-start",
-    "items-end", "items-stretch", "items-baseline", "self-center",
-    "self-start", "self-end", "self-auto", "gap", "grow", "shrink",
-    # Sizing
-    "w-full", "h-full", "w-auto", "h-auto", "min-w-0", "min-h-0",
-    "max-w-full", "max-h-full", "overflow-hidden", "overflow-auto",
-    "overflow-scroll", "overflow-visible",
-    # Text
-    "truncate", "text-left", "text-center", "text-right", "text-justify",
-    "uppercase", "lowercase", "capitalize", "normal-case",
-    "italic", "not-italic", "antialiased", "subpixel-antialiased",
-    "whitespace-nowrap", "whitespace-normal", "whitespace-pre",
-    "break-words", "break-all", "break-normal",
-    # Borders / rounding
-    "rounded", "rounded-full", "rounded-lg", "rounded-md", "rounded-sm",
-    "rounded-xl", "rounded-none",
-    "border", "border-0", "border-none", "outline-none",
-    # Effects (single-word)
-    "shadow", "ring",
-    # Misc Tailwind
-    "cursor-pointer", "pointer-events-none", "pointer-events-auto",
-    "select-none", "select-all", "select-text",
-    "transition", "transition-all", "transition-none",
-    "opacity-0", "opacity-100", "visible", "invisible", "sr-only",
-    "resize", "resize-none",
-    # SLDS base classes
-    "slds-button", "slds-input", "slds-select", "slds-textarea",
-    "slds-card", "slds-modal", "slds-form-element",
-    # Generic layout names (not component-specific)
-    "container", "wrapper", "content", "inner", "outer",
-    # shadcn/Radix common
-    "peer", "group",
-})
+_UTILITY_CLASSES = frozenset(
+    {
+        # Layout
+        "flex",
+        "inline-flex",
+        "block",
+        "inline-block",
+        "inline",
+        "grid",
+        "inline-grid",
+        "hidden",
+        "relative",
+        "absolute",
+        "fixed",
+        "sticky",
+        "static",
+        "contents",
+        "flow-root",
+        "table",
+        "inline-table",
+        # Flexbox / grid
+        "justify-center",
+        "justify-between",
+        "justify-start",
+        "justify-end",
+        "justify-around",
+        "justify-evenly",
+        "items-center",
+        "items-start",
+        "items-end",
+        "items-stretch",
+        "items-baseline",
+        "self-center",
+        "self-start",
+        "self-end",
+        "self-auto",
+        "gap",
+        "grow",
+        "shrink",
+        # Sizing
+        "w-full",
+        "h-full",
+        "w-auto",
+        "h-auto",
+        "min-w-0",
+        "min-h-0",
+        "max-w-full",
+        "max-h-full",
+        "overflow-hidden",
+        "overflow-auto",
+        "overflow-scroll",
+        "overflow-visible",
+        # Text
+        "truncate",
+        "text-left",
+        "text-center",
+        "text-right",
+        "text-justify",
+        "uppercase",
+        "lowercase",
+        "capitalize",
+        "normal-case",
+        "italic",
+        "not-italic",
+        "antialiased",
+        "subpixel-antialiased",
+        "whitespace-nowrap",
+        "whitespace-normal",
+        "whitespace-pre",
+        "break-words",
+        "break-all",
+        "break-normal",
+        # Borders / rounding
+        "rounded",
+        "rounded-full",
+        "rounded-lg",
+        "rounded-md",
+        "rounded-sm",
+        "rounded-xl",
+        "rounded-none",
+        "border",
+        "border-0",
+        "border-none",
+        "outline-none",
+        # Effects (single-word)
+        "shadow",
+        "ring",
+        # Misc Tailwind
+        "cursor-pointer",
+        "pointer-events-none",
+        "pointer-events-auto",
+        "select-none",
+        "select-all",
+        "select-text",
+        "transition",
+        "transition-all",
+        "transition-none",
+        "opacity-0",
+        "opacity-100",
+        "visible",
+        "invisible",
+        "sr-only",
+        "resize",
+        "resize-none",
+        # SLDS base classes
+        "slds-button",
+        "slds-input",
+        "slds-select",
+        "slds-textarea",
+        "slds-card",
+        "slds-modal",
+        "slds-form-element",
+        # Generic layout names (not component-specific)
+        "container",
+        "wrapper",
+        "content",
+        "inner",
+        "outer",
+        # shadcn/Radix common
+        "peer",
+        "group",
+    }
+)
 
 
 def _strip_variants(cls: str) -> str:
@@ -222,24 +303,18 @@ def build_selector_candidates(
     # 2. data-testid
     testid = attrs.get("data-testid", "")
     if testid:
-        candidates.append(
-            ("data-testid", f'[data-testid="{_css_escape(testid)}"]')
-        )
+        candidates.append(("data-testid", f'[data-testid="{_css_escape(testid)}"]'))
 
     # 3. aria-label
     aria_label = attrs.get("aria-label", "")
     if aria_label:
-        candidates.append(
-            ("aria-label", f'[aria-label="{_css_escape(aria_label)}"]')
-        )
+        candidates.append(("aria-label", f'[aria-label="{_css_escape(aria_label)}"]'))
 
     # 4. Links — a[href="…"]
     href = attrs.get("href", "")
     if tag == "a" and href and href != "#" and not href.startswith("javascript:"):
         if not _RECORD_ID_RE.search(href):
-            candidates.append(
-                ("Link href", f'a[href="{_css_escape(href)}"]')
-            )
+            candidates.append(("Link href", f'a[href="{_css_escape(href)}"]'))
 
     # 5. Inputs — input[name="…"]
     name = attrs.get("name", "")
@@ -248,9 +323,7 @@ def build_selector_candidates(
 
     # 6. Named buttons — button[name="…"]
     if tag == "button" and name:
-        candidates.append(
-            ("Button name", f'button[name="{_css_escape(name)}"]')
-        )
+        candidates.append(("Button name", f'button[name="{_css_escape(name)}"]'))
 
     # 7. Submit buttons
     if tag == "button" and attrs.get("type", "").lower() == "submit":
@@ -259,17 +332,17 @@ def build_selector_candidates(
     # 8. Title attribute
     title = attrs.get("title", "")
     if title:
-        candidates.append(
-            ("Title attribute", f'{tag}[title="{_css_escape(title)}"]')
-        )
+        candidates.append(("Title attribute", f'{tag}[title="{_css_escape(title)}"]'))
 
     # 9. role + aria-label combo
     role = attrs.get("role", "")
     if role and aria_label:
-        candidates.append((
-            "Role + aria-label",
-            f'[role="{_css_escape(role)}"][aria-label="{_css_escape(aria_label)}"]',
-        ))
+        candidates.append(
+            (
+                "Role + aria-label",
+                f'[role="{_css_escape(role)}"][aria-label="{_css_escape(aria_label)}"]',
+            )
+        )
 
     # 10. Semantic class names — include ALL that pass the filter
     classes = attrs.get("class", "").split()
@@ -299,9 +372,7 @@ class ResolveSelectorParams(BaseModel):
     index: int = Field(
         description="Element index from the browser state (the [N] prefix)"
     )
-    workflow_name: str = Field(
-        description="Name of the workflow this step belongs to"
-    )
+    workflow_name: str = Field(description="Name of the workflow this step belongs to")
     title: str = Field(description="Short title for this step (2-5 words)")
     description: str = Field(
         description="One sentence describing what the user should do"
@@ -349,10 +420,12 @@ def register_resolve_selector(tools: Tools) -> None:
             if len(candidates) == 1:
                 label, selector = candidates[0]
                 logger.info(
-                    "resolve_selector index=%d → %s [%s] "
-                    "(workflow=%r, title=%r)",
-                    params.index, selector, label,
-                    params.workflow_name, params.title,
+                    "resolve_selector index=%d → %s [%s] (workflow=%r, title=%r)",
+                    params.index,
+                    selector,
+                    label,
+                    params.workflow_name,
+                    params.title,
                 )
                 return ActionResult(
                     extracted_content=(
@@ -365,8 +438,7 @@ def register_resolve_selector(tools: Tools) -> None:
 
             # Multiple candidates
             lines = [
-                f"Selector candidates for element at index "
-                f"{params.index} (best first):"
+                f"Selector candidates for element at index {params.index} (best first):"
             ]
             for i, (label, selector) in enumerate(candidates, 1):
                 marker = " ← RECOMMENDED" if i == 1 else ""
@@ -382,11 +454,12 @@ def register_resolve_selector(tools: Tools) -> None:
             lines.append(meta)
 
             logger.info(
-                "resolve_selector index=%d → %d candidates: %s "
-                "(workflow=%r, title=%r)",
-                params.index, len(candidates),
+                "resolve_selector index=%d → %d candidates: %s (workflow=%r, title=%r)",
+                params.index,
+                len(candidates),
                 [s for _, s in candidates],
-                params.workflow_name, params.title,
+                params.workflow_name,
+                params.title,
             )
             return ActionResult(extracted_content="\n".join(lines))
 
@@ -399,15 +472,18 @@ def register_resolve_selector(tools: Tools) -> None:
             logger.info(
                 "resolve_selector index=%d → text fallback: "
                 "tag=%r text=%r (workflow=%r, title=%r)",
-                params.index, tag, text,
-                params.workflow_name, params.title,
+                params.index,
+                tag,
+                text,
+                params.workflow_name,
+                params.title,
             )
             return ActionResult(
                 extracted_content=(
                     f"No CSS selector available for element at index "
                     f"{params.index}.\n"
-                    f"Text-based fallback: set `element` to \"{tag}\" "
-                    f"and `text` to \"{text}\" in your output JSON.\n"
+                    f'Text-based fallback: set `element` to "{tag}" '
+                    f'and `text` to "{text}" in your output JSON.\n'
                     f"The frontend will locate the element by matching "
                     f"the tag and text content.\n{meta}"
                 ),

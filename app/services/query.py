@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from app.agents.extraction.agent import run_extraction_agent
 from app.config import get_settings
 from app.modules.branding.extractor import extract_brand
-from app.modules.crawl.models import CrawlResponse, WorkflowSpec
+from app.domain.workflows.models import CrawlResponse, WorkflowSpec
 from app.modules.crawl.review import review_selectors
 from app.modules.research.researcher import research_workflow
 
@@ -41,12 +41,20 @@ async def run_query_agent(
         # Phase 1 (optional): Research — ask Gemini what this workflow looks like
         logger.info("Starting research for query=%r url=%r", query, url)
         research = await research_workflow(url, query, settings, cookies_file)
-        logger.info("Research complete: description=%r steps=%s", research.description[:60], research.steps)
+        logger.info(
+            "Research complete: description=%r steps=%s",
+            research.description[:60],
+            research.steps,
+        )
 
     # Phase 2: Single focused extraction, optionally guided by research
     description = research.description if research else ""
     spec = WorkflowSpec(name=query, description=description)
-    logger.info("Starting extraction agent for workflow=%r (research=%s)", spec.name, use_research)
+    logger.info(
+        "Starting extraction agent for workflow=%r (research=%s)",
+        spec.name,
+        use_research,
+    )
     workflow = await run_extraction_agent(
         url, spec, credentials, cookies_file, research_context=research
     )
@@ -67,6 +75,7 @@ async def run_query_agent(
 
     try:
         from app.services.workflows_repo import save_workflows
+
         await save_workflows(result)
     except Exception:
         logger.exception("Failed to save workflows to MongoDB")
