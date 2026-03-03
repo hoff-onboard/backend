@@ -7,8 +7,8 @@ from browser_use.dom.views import DEFAULT_INCLUDE_ATTRIBUTES
 
 from app.agents.extraction.prompt import SYSTEM_PROMPT, build_task_prompt
 from app.config import get_settings
-from app.modules.crawl.models import Workflow, WorkflowSpec, WorkflowsResponse
-from app.modules.research.models import ResearchContext
+from app.domain.workflows.models import Workflow, WorkflowSpec, WorkflowsResponse
+from app.domain.research.models import ResearchContext
 from app.modules.crawl.selector import register_resolve_selector
 from app.modules.crawl.validate import validate_workflows
 from app.services.llm import get_llm
@@ -40,7 +40,11 @@ async def run_extraction_agent(
     tools = Tools()
     register_resolve_selector(tools)
 
-    browser_session = BrowserSession(storage_state=cookies_file, user_data_dir=None, headless=True) if cookies_file else BrowserSession(headless=True)
+    browser_session = (
+        BrowserSession(storage_state=cookies_file, user_data_dir=None, headless=True)
+        if cookies_file
+        else BrowserSession(headless=True)
+    )
 
     agent_kwargs: dict = dict(
         task=task,
@@ -63,7 +67,9 @@ async def run_extraction_agent(
 
     raw = history.final_result()
     if not raw:
-        logger.warning("Extraction agent returned no result for workflow: %s", spec.name)
+        logger.warning(
+            "Extraction agent returned no result for workflow: %s", spec.name
+        )
         return None
 
     # Layer 2: Pydantic field validator runs inside model_validate_json

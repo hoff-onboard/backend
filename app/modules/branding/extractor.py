@@ -1,6 +1,6 @@
 from playwright.async_api import async_playwright
 
-from app.modules.branding.models import Brand
+from app.domain.branding.models import Brand
 
 BRAND_JS = """\
 (() => {

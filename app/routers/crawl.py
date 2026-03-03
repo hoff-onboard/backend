@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from app.modules.crawl.models import CrawlRequest, CrawlResponse
+from app.domain.workflows.models import CrawlRequest, CrawlResponse
 from app.services.crawl import run_crawl_agent
 
 router = APIRouter()

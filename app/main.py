@@ -8,7 +8,7 @@ from app.routers.crawl import router as crawl_router
 from app.routers.query import router as query_router
 from app.routers.jobs import router as jobs_router
 from app.routers.stream import router as stream_router
-from app.services.mongodb import close_db, ensure_indexes
+from app.infrastructure.persistence.mongodb.client import close_db, ensure_indexes
 
 
 class PrivateNetworkMiddleware(BaseHTTPMiddleware):

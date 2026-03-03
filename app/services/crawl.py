@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from app.agents.discovery.agent import run_discovery_agent
 from app.agents.extraction.agent import run_extraction_agent
 from app.modules.branding.extractor import extract_brand
-from app.modules.crawl.models import CrawlResponse
+from app.domain.workflows.models import CrawlResponse
 
 logger = logging.getLogger(__name__)
 

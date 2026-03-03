@@ -12,7 +12,7 @@ import re
 
 from browser_use import BrowserSession
 
-from app.modules.crawl.models import Step, Workflow, WorkflowsResponse
+from app.domain.workflows.models import Step, Workflow, WorkflowsResponse
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +22,27 @@ logger = logging.getLogger(__name__)
 
 # Patterns that are always invalid in a standard CSS selector
 _BAD_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
-    ("Playwright pseudo-selector", re.compile(r":has-text\(|:text\(|>>|:visible", re.IGNORECASE)),
-    ("Positional selector", re.compile(r":nth-child\(|:nth-of-type\(|:first-child|:last-child", re.IGNORECASE)),
-    ("Dynamic ID", re.compile(r"\[id=['\"]?[:_]?[A-Za-z0-9_]*[:_][A-Za-z0-9_]{3,}['\"]?\]")),
+    (
+        "Playwright pseudo-selector",
+        re.compile(r":has-text\(|:text\(|>>|:visible", re.IGNORECASE),
+    ),
+    (
+        "Positional selector",
+        re.compile(
+            r":nth-child\(|:nth-of-type\(|:first-child|:last-child", re.IGNORECASE
+        ),
+    ),
+    (
+        "Dynamic ID",
+        re.compile(r"\[id=['\"]?[:_]?[A-Za-z0-9_]*[:_][A-Za-z0-9_]{3,}['\"]?\]"),
+    ),
     ("React-style ID", re.compile(r"\[id=['\"]?:r\d+:['\"]?\]")),
-    ("Hash class name", re.compile(
-        r"\.[a-zA-Z][\w]*-[a-zA-Z][\w]*-(?=[a-zA-Z0-9]*[0-9])(?=[a-zA-Z0-9]*[a-zA-Z])[a-zA-Z0-9]{4,}"
-    )),
+    (
+        "Hash class name",
+        re.compile(
+            r"\.[a-zA-Z][\w]*-[a-zA-Z][\w]*-(?=[a-zA-Z0-9]*[0-9])(?=[a-zA-Z0-9]*[a-zA-Z])[a-zA-Z0-9]{4,}"
+        ),
+    ),
 ]
 
 

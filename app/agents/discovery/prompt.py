@@ -13,9 +13,7 @@ Guidelines:
 
 def build_task_prompt(url: str, query: str | None = None) -> str:
     query_line = (
-        f'\n- The workflow "{query}" MUST be included in your list.'
-        if query
-        else ""
+        f'\n- The workflow "{query}" MUST be included in your list.' if query else ""
     )
     return f"""\
 Navigate to {url} and identify up to 5 onboarding workflows worth teaching a new user.{query_line}

@@ -5,7 +5,7 @@ import tempfile
 from fastapi import APIRouter, HTTPException
 from sse_starlette.sse import EventSourceResponse
 
-from app.modules.crawl.models import QueryRequest
+from app.domain.workflows.models import QueryRequest
 from app.services.job_manager import create_job, get_job, get_job_stream
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,12 @@ async def get_job_status(job_id: str):
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    return {"job_id": job_id, "status": job["status"], "url": job["url"], "query": job["query"]}
+    return {
+        "job_id": job_id,
+        "status": job["status"],
+        "url": job["url"],
+        "query": job["query"],
+    }
 
 
 @router.get("/jobs/{job_id}/stream")

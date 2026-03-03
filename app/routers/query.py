@@ -2,11 +2,12 @@ import json
 import logging
 import tempfile
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.modules.crawl.models import CrawlResponse, QueryRequest
+from app.api.dependencies import get_workflow_repo
+from app.domain.workflows.models import CrawlResponse, QueryRequest
+from app.domain.workflows.ports import WorkflowRepository
 from app.services.query import run_query_agent
-from app.services.workflows_repo import get_workflows_by_domain, soft_delete_workflow
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -21,9 +22,7 @@ async def query(request: QueryRequest):
                 "cookies": request.cookies,
                 "origins": request.origins or [],
             }
-            tmp = tempfile.NamedTemporaryFile(
-                mode="w", suffix=".json", delete=False
-            )
+            tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
             json.dump(storage_state, tmp)
             tmp.close()
             cookies_file = tmp.name
@@ -40,16 +39,25 @@ async def query(request: QueryRequest):
 
 
 @router.get("/workflows/{domain}")
-async def get_workflows(domain: str):
-    doc = await get_workflows_by_domain(domain)
+async def get_workflows(
+    domain: str,
+    repo: WorkflowRepository = Depends(get_workflow_repo),
+):
+    doc = await repo.get_by_domain(domain)
     if not doc:
-        raise HTTPException(status_code=404, detail="No workflows found for this domain")
+        raise HTTPException(
+            status_code=404, detail="No workflows found for this domain"
+        )
     return doc
 
 
 @router.delete("/workflows/{domain}/{workflow_name}")
-async def delete_workflow(domain: str, workflow_name: str):
-    deleted = await soft_delete_workflow(domain, workflow_name)
+async def delete_workflow(
+    domain: str,
+    workflow_name: str,
+    repo: WorkflowRepository = Depends(get_workflow_repo),
+):
+    deleted = await repo.soft_delete(domain, workflow_name)
     if not deleted:
         raise HTTPException(status_code=404, detail="Workflow not found")
     return {"status": "deleted"}

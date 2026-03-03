@@ -14,7 +14,7 @@ from browser_use import Agent
 from app.agents.extraction.agent import run_extraction_agent
 from app.config import get_settings
 from app.modules.branding.extractor import extract_brand
-from app.modules.crawl.events import (
+from app.domain.workflows.events import (
     agent_thought_event,
     brand_event,
     done_event,
@@ -24,7 +24,7 @@ from app.modules.crawl.events import (
     screenshot_event,
     workflow_event,
 )
-from app.modules.crawl.models import CrawlResponse, WorkflowSpec
+from app.domain.workflows.models import CrawlResponse, WorkflowSpec
 from app.modules.crawl.review import review_selectors
 from app.modules.research.researcher import research_workflow
 
@@ -33,7 +33,9 @@ logger = logging.getLogger(__name__)
 _MAX_SCREENSHOT_WIDTH = 1440
 
 
-def _resize_screenshot_b64_sync(b64_data: str, max_width: int = _MAX_SCREENSHOT_WIDTH) -> str:
+def _resize_screenshot_b64_sync(
+    b64_data: str, max_width: int = _MAX_SCREENSHOT_WIDTH
+) -> str:
     try:
         from PIL import Image
 
@@ -50,7 +52,9 @@ def _resize_screenshot_b64_sync(b64_data: str, max_width: int = _MAX_SCREENSHOT_
         return b64_data
 
 
-async def _resize_screenshot_b64(b64_data: str, max_width: int = _MAX_SCREENSHOT_WIDTH) -> str:
+async def _resize_screenshot_b64(
+    b64_data: str, max_width: int = _MAX_SCREENSHOT_WIDTH
+) -> str:
     """Run CPU-heavy resize in a thread to avoid blocking the event loop."""
     return await asyncio.get_event_loop().run_in_executor(
         None, _resize_screenshot_b64_sync, b64_data, max_width
@@ -91,9 +95,7 @@ async def stream_query(
             thoughts = agent.history.model_thoughts()
             if thoughts:
                 clean = _format_thought(thoughts[-1])
-                await event_queue.put(
-                    agent_thought_event(step_counter, clean, 0)
-                )
+                await event_queue.put(agent_thought_event(step_counter, clean, 0))
         except Exception:
             logger.debug("Could not extract agent thought at step %d", step_counter)
 
@@ -101,17 +103,19 @@ async def stream_query(
         try:
             from browser_use.browser.events import ScreenshotEvent
 
-            evt = agent.browser_session.event_bus.dispatch(ScreenshotEvent(full_page=False))
+            evt = agent.browser_session.event_bus.dispatch(
+                ScreenshotEvent(full_page=False)
+            )
             await evt
             result = await evt.event_result(raise_if_any=False, raise_if_none=False)
             if result:
                 resized = await _resize_screenshot_b64(str(result))
                 screenshots.append(resized)
-                await event_queue.put(
-                    screenshot_event(step_counter, resized, 0)
-                )
+                await event_queue.put(screenshot_event(step_counter, resized, 0))
         except Exception as e:
-            logger.warning("Could not capture screenshot at step %d: %s", step_counter, e)
+            logger.warning(
+                "Could not capture screenshot at step %d: %s", step_counter, e
+            )
 
     try:
         settings = get_settings()
@@ -134,7 +138,12 @@ async def stream_query(
         # Run extraction in a task so we can drain events concurrently
         extraction_task = asyncio.create_task(
             run_extraction_agent(
-                url, spec, None, cookies_file, research_context=research, on_step_end=on_step_end
+                url,
+                spec,
+                None,
+                cookies_file,
+                research_context=research,
+                on_step_end=on_step_end,
             )
         )
 
@@ -170,7 +179,10 @@ async def stream_query(
         result = CrawlResponse(url=str(url), brand=brand, workflows=workflows)
         try:
             from app.services.workflows_repo import save_workflows
-            await save_workflows(result, screenshots_map={0: screenshots} if screenshots else None)
+
+            await save_workflows(
+                result, screenshots_map={0: screenshots} if screenshots else None
+            )
         except Exception:
             logger.exception("Failed to save workflows to MongoDB")
 

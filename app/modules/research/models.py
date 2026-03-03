@@ -1,6 +1,5 @@
-from pydantic import BaseModel
+"""Backward-compatible re-export. Canonical location: app.domain.research.models"""
 
+from app.domain.research.models import ResearchContext
 
-class ResearchContext(BaseModel):
-    description: str
-    steps: list[str]
+__all__ = ["ResearchContext"]
