@@ -1,23 +1,44 @@
-"""FastAPI dependency injection — single place to wire adapters."""
+"""Composition root: the only place that picks concrete adapters for the ports.
 
-from app.config import Settings, get_settings
+Tests override these with FastAPI's dependency_overrides.
+"""
+
+from functools import lru_cache
+from typing import Annotated
+
+from fastapi import Depends
+
+from app.application.pipeline import Pipeline
+from app.config import get_settings
 from app.domain.workflows.ports import WorkflowRepository
+from app.infrastructure.browser.agents import BrowserUseDiscoverer, BrowserUseExtractor
+from app.infrastructure.browser.brand_extractor import PlaywrightBrandExtractor
+from app.infrastructure.browser.storage_state import TempFileSessionStore
+from app.infrastructure.llm.research import LLMResearchProvider
+from app.infrastructure.llm.selector_review import LLMSelectorReviewer
+from app.infrastructure.persistence.json_archive import JsonFileArchive
 from app.infrastructure.persistence.mongodb.workflow_repo import MongoWorkflowRepository
 
-_workflow_repo: MongoWorkflowRepository | None = None
 
-
+@lru_cache
 def get_workflow_repo() -> WorkflowRepository:
-    """Return the active WorkflowRepository adapter.
-
-    Swap this to PostgresWorkflowRepository (or an in-memory stub for tests)
-    by changing the implementation here — no other code needs to change.
-    """
-    global _workflow_repo
-    if _workflow_repo is None:
-        _workflow_repo = MongoWorkflowRepository()
-    return _workflow_repo
+    return MongoWorkflowRepository()
 
 
-def get_app_settings() -> Settings:
-    return get_settings()
+@lru_cache
+def get_pipeline() -> Pipeline:
+    settings = get_settings()
+    return Pipeline(
+        research=LLMResearchProvider(settings),
+        branding=PlaywrightBrandExtractor(),
+        discoverer=BrowserUseDiscoverer(settings),
+        extractor=BrowserUseExtractor(settings),
+        reviewer=LLMSelectorReviewer(settings),
+        repository=get_workflow_repo(),
+        sessions=TempFileSessionStore(),
+        archive=JsonFileArchive(),
+    )
+
+
+PipelineDep = Annotated[Pipeline, Depends(get_pipeline)]
+RepositoryDep = Annotated[WorkflowRepository, Depends(get_workflow_repo)]

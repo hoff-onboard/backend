@@ -4,10 +4,9 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.routers.crawl import router as crawl_router
-from app.routers.query import router as query_router
-from app.routers.jobs import router as jobs_router
-from app.routers.stream import router as stream_router
+from app.api.routers.crawl import router as crawl_router
+from app.api.routers.jobs import router as jobs_router
+from app.api.routers.query import router as query_router
 from app.infrastructure.persistence.mongodb.client import close_db, ensure_indexes
 
 
@@ -42,7 +41,6 @@ app.add_middleware(PrivateNetworkMiddleware)
 app.include_router(crawl_router)
 app.include_router(query_router)
 app.include_router(jobs_router)
-app.include_router(stream_router)
 
 
 @app.get("/health")

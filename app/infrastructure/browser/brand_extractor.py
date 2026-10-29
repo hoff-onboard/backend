@@ -46,15 +46,18 @@ BRAND_JS = """\
 """
 
 
-async def extract_brand(url: str, cookies_file: str | None = None) -> Brand:
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            storage_state=cookies_file if cookies_file else None,
-        )
-        page = await context.new_page()
-        await page.goto(url, wait_until="domcontentloaded")
-        raw = await page.evaluate(BRAND_JS)
-        await browser.close()
+class PlaywrightBrandExtractor:
+    """Reads the site's colours, font and corner radius from computed styles."""
 
-    return Brand(**raw)
+    async def extract(self, url: str, cookies_file: str | None = None) -> Brand:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(
+                storage_state=cookies_file if cookies_file else None,
+            )
+            page = await context.new_page()
+            await page.goto(url, wait_until="domcontentloaded")
+            raw = await page.evaluate(BRAND_JS)
+            await browser.close()
+
+        return Brand(**raw)
