@@ -14,6 +14,7 @@ _DEFAULT_MODELS = {
 _DEFAULT_RESEARCH_MODELS = {
     "gemini": "gemini-2.0-flash",
     "minimax": "MiniMax-Text-01",
+    "openai": "gpt-4o",
 }
 
 
@@ -23,8 +24,12 @@ class Settings(BaseSettings):
     )
     LLM_MODEL: str | None = None
 
-    RESEARCH_PROVIDER: Literal["gemini", "minimax"] = "gemini"
+    RESEARCH_PROVIDER: Literal["gemini", "minimax", "openai"] = "gemini"
     RESEARCH_MODEL: str | None = None
+
+    # Guards against runaway browser agents (each step is a paid LLM call)
+    AGENT_MAX_STEPS: int = 25
+    AGENT_MAX_REPEATS: int = 3
 
     BROWSER_USE_API_KEY: str = ""
     OPENAI_API_KEY: str = ""

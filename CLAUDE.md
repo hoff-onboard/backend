@@ -70,7 +70,7 @@ uv run ruff format .
 |---|---|---|
 | `LLM_PROVIDER` | Yes | `browser-use`, `openai`, `anthropic`, or `gemini` |
 | `LLM_MODEL` | No | Override default model for the chosen provider |
-| `RESEARCH_PROVIDER` | No | `gemini` (default) or `minimax` |
+| `RESEARCH_PROVIDER` | No | `gemini` (default), `minimax`, or `openai` |
 | `RESEARCH_MODEL` | No | Override default research model |
 | `BROWSER_USE_API_KEY` | If provider=browser-use | API key for browser-use |
 | `OPENAI_API_KEY` | If provider=openai | OpenAI API key |
@@ -83,76 +83,57 @@ uv run ruff format .
 
 ## Architecture — Domain-Driven Design
 
-### Target Directory Structure
+### Directory Structure
 
-The codebase is moving toward a **ports & adapters** (hexagonal) architecture organized by bounded context. Each domain owns its models, use cases, and port interfaces. Infrastructure adapters live at the edges.
+Ports & adapters (hexagonal). The domain owns models and port interfaces, use cases in `application/` depend only on those ports, and `infrastructure/` holds the adapters. `api/dependencies.py` is the single composition root that picks adapters.
 
 ```
 app/
-├── main.py                          # FastAPI app, middleware, lifespan
-├── config.py                        # Pydantic settings
+├── main.py                          # FastAPI app, middleware, lifespan (Mongo indexes)
+├── config.py                        # Pydantic settings from .env
 │
-├── domain/                          # ── DOMAIN LAYER (pure, no framework deps) ──
+├── domain/                          # ── DOMAIN (pure, imports nothing else from app) ──
 │   ├── workflows/
-│   │   ├── models.py                # Workflow, Step, WorkflowSpec, WorkflowsResponse
-│   │   ├── events.py                # Domain events (SSE event factories)
-│   │   └── ports.py                 # WorkflowRepository protocol
-│   │
-│   ├── branding/
-│   │   ├── models.py                # Brand
-│   │   └── ports.py                 # BrandExtractor protocol
-│   │
-│   └── research/
-│       ├── models.py                # ResearchContext
-│       └── ports.py                 # ResearchProvider protocol
+│   │   ├── models.py                # Workflow, Step (+ selector validator), WorkflowSpec, AgentStep, requests
+│   │   ├── events.py                # SSE event factories
+│   │   └── ports.py                 # WorkflowRepository, WorkflowDiscoverer, WorkflowExtractor,
+│   │                                #   SelectorReviewer, BrowserSessionStore, ResultArchive, StepCallback
+│   ├── branding/                    # Brand + BrandExtractor port
+│   └── research/                    # ResearchContext + ResearchProvider port
 │
-├── application/                     # ── APPLICATION LAYER (use cases / orchestration) ──
-│   ├── crawl_service.py             # Full crawl: discovery → extraction → branding
-│   ├── query_service.py             # Single query: research → extraction → review
-│   ├── crawl_stream_service.py      # Streaming crawl with SSE events
-│   ├── query_stream_service.py      # Streaming query with SSE events
-│   └── job_manager.py              # In-memory async job queue
+├── application/                     # ── USE CASES (depend on domain only) ──
+│   ├── pipeline.py                  # Pipeline: the bundle of ports a use case needs; cancel_pending()
+│   ├── query.py                     # run_query / stream_query: research → extract → review → save
+│   ├── crawl.py                     # run_crawl / stream_crawl: discover → extract each flow
+│   └── job_manager.py               # In-memory jobs: background task, SSE fan-out with replay, cancel
 │
-├── infrastructure/                  # ── INFRASTRUCTURE LAYER (adapters) ──
-│   ├── persistence/
-│   │   ├── mongodb/
-│   │   │   ├── client.py            # Motor client lifecycle
-│   │   │   └── workflow_repo.py     # MongoWorkflowRepository (implements port)
-│   │   └── postgresql/
-│   │       ├── client.py            # asyncpg/SQLAlchemy async client
-│   │       └── workflow_repo.py     # PostgresWorkflowRepository (implements port)
-│   │
-│   ├── llm/
-│   │   ├── factory.py               # get_llm() provider factory
-│   │   ├── research_gemini.py       # Gemini research adapter
-│   │   └── research_minimax.py      # MiniMax research adapter
-│   │
+├── infrastructure/                  # ── ADAPTERS ──
 │   ├── browser/
-│   │   ├── discovery_agent.py       # Discovery agent (browser-use)
-│   │   ├── extraction_agent.py      # Extraction agent (browser-use)
-│   │   ├── selector.py              # CSS selector builder + resolve_selector action
-│   │   ├── validate.py              # Post-extraction selector validation
-│   │   ├── review.py                # Selector structural/dynamic classification
-│   │   └── brand_extractor.py       # Playwright-based brand extraction
-│   │
-│   └── prompts/
-│       ├── discovery.py             # Discovery agent system + task prompts
-│       └── extraction.py            # Extraction agent system + task prompts
+│   │   ├── agents.py                # BrowserUseDiscoverer, BrowserUseExtractor
+│   │   ├── agent_runtime.py         # Browser session, step budget + loop detection, step reports
+│   │   ├── selector.py              # Selector layer 1: resolve_selector action builds CSS from the DOM
+│   │   ├── validate.py              # Selector layer 3: syntax + DOM presence on the live page
+│   │   ├── brand_extractor.py       # PlaywrightBrandExtractor
+│   │   └── storage_state.py         # TempFileSessionStore (cookie files, 0600, removed after the run)
+│   ├── llm/
+│   │   ├── factory.py               # Agent LLM, research LLM (gemini/openai/minimax), JSON reply parsing
+│   │   ├── research.py              # LLMResearchProvider
+│   │   └── selector_review.py       # LLMSelectorReviewer (structural vs dynamic)
+│   ├── prompts/                     # Discovery + extraction agent prompts
+│   └── persistence/
+│       ├── mongodb/                 # Motor client, MongoWorkflowRepository
+│       ├── postgresql/              # Stub adapter (NotImplementedError)
+│       └── json_archive.py          # JsonFileArchive (outputs/*.json)
 │
-├── api/                             # ── API LAYER (FastAPI routers + deps) ──
-│   ├── dependencies.py              # Dependency injection (get_repo, get_settings, etc.)
-│   ├── crawl_router.py
-│   ├── query_router.py
-│   ├── jobs_router.py
-│   └── stream_router.py
-│
-└── tests/                           # ── TESTS ──
-    ├── conftest.py                  # Shared fixtures (in-memory repo, fake LLM, etc.)
-    ├── unit/
-    │   ├── domain/                  # Pure model/logic tests
-    │   └── infrastructure/          # Adapter-specific tests
-    └── integration/
-        └── api/                     # FastAPI TestClient tests
+└── api/                             # ── HTTP ──
+    ├── dependencies.py              # Composition root: get_pipeline(), get_workflow_repo()
+    └── routers/                     # jobs, query (+ /workflows), crawl (+ /stream/crawl)
+
+tests/
+├── conftest.py                      # In-memory fakes for every port + make_pipeline fixture
+├── unit/                            # Architecture rules, selector rules, agent runtime, JSON parsing
+├── application/                     # Use cases and job manager against fakes
+└── api/                             # Routes via TestClient with dependency_overrides
 ```
 
 ### Layer Rules
@@ -162,7 +143,9 @@ app/
 | **Domain** | Nothing (pure Python + Pydantic) | Application, Infrastructure, API, FastAPI |
 | **Application** | Domain | Infrastructure, API, FastAPI |
 | **Infrastructure** | Domain, external libs | Application, API |
-| **API** | Application, Domain, FastAPI | Infrastructure (use DI) |
+| **API** | Application, Domain, FastAPI | Infrastructure (only `api/dependencies.py` may, as the composition root) |
+
+`tests/unit/test_architecture.py` enforces these rules on every test run.
 
 ### Ports & Adapters Pattern
 
@@ -305,48 +288,16 @@ except WorkflowNotFoundError:
 
 ## Testing Strategy
 
-### Framework: pytest + pytest-asyncio
+### Framework: pytest + pytest-asyncio (`asyncio_mode = "auto"`)
 
-```
-tests/
-├── conftest.py            # Shared fixtures
-├── unit/
-│   ├── domain/            # Pure model and logic tests (fast, no I/O)
-│   │   ├── test_models.py
-│   │   └── test_selector_validation.py
-│   └── infrastructure/
-│       ├── test_selector_builder.py
-│       └── test_brand_extractor.py
-└── integration/
-    └── api/
-        ├── test_crawl_router.py
-        └── test_query_router.py
-```
+See the `tests/` tree above. Use cases are tested with the fakes in `tests/conftest.py`, so no browser, LLM or database is needed.
 
 ### Test Principles
 - **Unit tests** cover domain models, validators, selector logic — no network, no browser, no database
 - **Integration tests** use FastAPI's `TestClient` with injected in-memory/mock adapters
 - Test files mirror the source structure under `tests/`
-- Use `@pytest.mark.asyncio` for async tests
+- Async tests need no decorator (`asyncio_mode = "auto"`)
 - Use `conftest.py` fixtures for reusable test setup (fake repos, mock settings)
-
-### In-Memory Adapter for Testing
-
-```python
-# tests/conftest.py
-class InMemoryWorkflowRepository:
-    def __init__(self):
-        self._store: dict[str, dict] = {}
-
-    async def save(self, result, screenshots_map=None):
-        ...
-
-    async def get_by_domain(self, domain):
-        return self._store.get(domain)
-
-    async def soft_delete(self, domain, workflow_name):
-        ...
-```
 
 ### Running Tests
 
@@ -457,19 +408,12 @@ A CI pipeline should:
 
 ---
 
-## Current State & Migration Notes
+## Current State
 
-The codebase currently uses a **flat module structure** (`app/agents/`, `app/modules/`, `app/routers/`, `app/services/`). The target is the DDD structure documented above. Migration should be incremental:
-
-1. **Phase 1**: Define domain models and port interfaces in `domain/` — this is a pure extraction, no logic changes
-2. **Phase 2**: Create adapters in `infrastructure/` — wrap existing MongoDB code in `MongoWorkflowRepository`, add PostgreSQL adapter
-3. **Phase 3**: Wire dependency injection in `api/dependencies.py` — routers use `Depends()` instead of direct imports
-4. **Phase 4**: Move orchestration logic from `services/` into `application/` layer
-5. **Phase 5**: Add tests at each layer, starting with unit tests on domain models and selector logic
+The ports & adapters migration is complete; the remaining stub is the PostgreSQL adapter, which nothing uses yet.
 
 ### What NOT to Change
 
 - The 3-layer selector validation pipeline is well-designed — preserve it
 - The SSE streaming architecture works well — keep the event factory pattern
-- The `browser-use` agent integration is solid — just relocate files, don't restructure the agent logic
-- Prompt files are well-organized — move to `infrastructure/prompts/` as-is
+- The `browser-use` agent integration lives behind the `WorkflowDiscoverer`/`WorkflowExtractor` ports; keep browser-use types out of `application/`

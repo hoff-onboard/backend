@@ -63,6 +63,14 @@ class DiscoveryResponse(BaseModel):
     workflows: list[WorkflowSpec]
 
 
+class AgentStep(BaseModel):
+    """Progress report from a browser agent after one step."""
+
+    step: int
+    thought: str = ""
+    screenshot_b64: str | None = None
+
+
 class CrawlRequest(BaseModel):
     url: HttpUrl
     query: str | None = None
