@@ -14,7 +14,11 @@ from app.domain.workflows.models import (
     WorkflowSpec,
     WorkflowsResponse,
 )
-from app.domain.workflows.ports import StepCallback
+from app.domain.workflows.ports import (
+    StepCallback,
+    WorkflowDiscoverer,
+    WorkflowExtractor,
+)
 from app.infrastructure.browser.agent_runtime import (
     close_browser,
     new_browser_session,
@@ -45,7 +49,7 @@ def _agent_options(
     return options
 
 
-class BrowserUseDiscoverer:
+class BrowserUseDiscoverer(WorkflowDiscoverer):
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
@@ -76,7 +80,7 @@ class BrowserUseDiscoverer:
         return DiscoveryResponse.model_validate_json(raw).workflows
 
 
-class BrowserUseExtractor:
+class BrowserUseExtractor(WorkflowExtractor):
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 

@@ -8,10 +8,12 @@ import logging
 import os
 import tempfile
 
+from app.domain.workflows.ports import BrowserSessionStore
+
 logger = logging.getLogger(__name__)
 
 
-class TempFileSessionStore:
+class TempFileSessionStore(BrowserSessionStore):
     def write(self, cookies: list[dict] | None, origins: list[dict] | None) -> str | None:
         if not cookies:
             return None

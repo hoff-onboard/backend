@@ -149,7 +149,7 @@ tests/
 
 ### Ports & Adapters Pattern
 
-**Ports** are abstract interfaces (Python `Protocol` classes) defined in the domain layer. **Adapters** are concrete implementations in the infrastructure layer. The application layer depends only on ports; the API layer wires adapters via FastAPI dependency injection.
+**Ports** are abstract interfaces (Python `Protocol` classes) defined in the domain layer. **Adapters** are concrete implementations in the infrastructure layer. Adapters subclass their port explicitly, and `tests/unit/test_adapters_match_ports.py` checks that every adapter wired in `api/dependencies.py` matches its port signature for signature. The application layer depends only on ports; the API layer wires adapters via FastAPI dependency injection.
 
 ```python
 # domain/workflows/ports.py
@@ -162,13 +162,13 @@ class WorkflowRepository(Protocol):
 
 
 # infrastructure/persistence/mongodb/workflow_repo.py
-class MongoWorkflowRepository:
+class MongoWorkflowRepository(WorkflowRepository):
     """Implements WorkflowRepository using Motor (async MongoDB)."""
     ...
 
 
 # infrastructure/persistence/postgresql/workflow_repo.py
-class PostgresWorkflowRepository:
+class PostgresWorkflowRepository(WorkflowRepository):
     """Implements WorkflowRepository using SQLAlchemy async."""
     ...
 

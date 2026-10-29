@@ -1,6 +1,7 @@
 from playwright.async_api import async_playwright
 
 from app.domain.branding.models import Brand
+from app.domain.branding.ports import BrandExtractor
 
 BRAND_JS = """\
 (() => {
@@ -46,7 +47,7 @@ BRAND_JS = """\
 """
 
 
-class PlaywrightBrandExtractor:
+class PlaywrightBrandExtractor(BrandExtractor):
     """Reads the site's colours, font and corner radius from computed styles."""
 
     async def extract(self, url: str, cookies_file: str | None = None) -> Brand:

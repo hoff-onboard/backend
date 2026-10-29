@@ -3,9 +3,10 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from app.domain.workflows.models import CrawlResponse
+from app.domain.workflows.ports import ResultArchive
 
 
-class JsonFileArchive:
+class JsonFileArchive(ResultArchive):
     """Writes each run's result to outputs/<domain>_<timestamp>.json for inspection."""
 
     def __init__(self, directory: Path = Path("outputs")) -> None:
