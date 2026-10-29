@@ -2,10 +2,11 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from app.domain.workflows.models import CrawlResponse
+from app.domain.workflows.ports import WorkflowRepository
 from app.infrastructure.persistence.mongodb.client import get_db
 
 
-class MongoWorkflowRepository:
+class MongoWorkflowRepository(WorkflowRepository):
     """Implements WorkflowRepository using Motor (async MongoDB)."""
 
     async def save(

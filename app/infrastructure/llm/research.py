@@ -2,6 +2,7 @@ import logging
 
 from app.config import Settings
 from app.domain.research.models import ResearchContext
+from app.domain.research.ports import ResearchProvider
 from app.infrastructure.llm.factory import parse_json_reply, research_chat
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ Respond ONLY with a JSON object — no markdown, no explanation — in this exac
 """
 
 
-class LLMResearchProvider:
+class LLMResearchProvider(ResearchProvider):
     """Asks the research LLM how a workflow usually goes, from its knowledge of the product."""
 
     def __init__(self, settings: Settings) -> None:

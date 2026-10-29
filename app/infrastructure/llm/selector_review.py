@@ -11,6 +11,7 @@ import logging
 
 from app.config import Settings
 from app.domain.workflows.models import Step, Workflow
+from app.domain.workflows.ports import SelectorReviewer
 from app.infrastructure.llm.factory import parse_json_reply, research_chat
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ Respond ONLY with a JSON array — no markdown, no explanation. Each item:
 """
 
 
-class LLMSelectorReviewer:
+class LLMSelectorReviewer(SelectorReviewer):
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 

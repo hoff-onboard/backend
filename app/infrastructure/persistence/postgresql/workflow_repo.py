@@ -6,9 +6,10 @@ or raw asyncpg queries.
 """
 
 from app.domain.workflows.models import CrawlResponse
+from app.domain.workflows.ports import WorkflowRepository
 
 
-class PostgresWorkflowRepository:
+class PostgresWorkflowRepository(WorkflowRepository):
     """Implements WorkflowRepository using SQLAlchemy async (PostgreSQL)."""
 
     async def save(
