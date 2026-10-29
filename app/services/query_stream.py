@@ -117,6 +117,8 @@ async def stream_query(
                 "Could not capture screenshot at step %d: %s", step_counter, e
             )
 
+    brand_task: asyncio.Task | None = None
+    extraction_task: asyncio.Task | None = None
     try:
         settings = get_settings()
 
@@ -192,3 +194,11 @@ async def stream_query(
         logger.exception("stream_query failed")
         yield error_event(str(exc))
         yield done_event()
+    finally:
+        # Reached on job cancellation too: child tasks would otherwise keep their browsers running
+        for task in (extraction_task, brand_task):
+            if task and not task.done():
+                task.cancel()
+        await asyncio.gather(
+            *(t for t in (extraction_task, brand_task) if t), return_exceptions=True
+        )

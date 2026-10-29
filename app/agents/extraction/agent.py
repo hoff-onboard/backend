@@ -6,6 +6,7 @@ from browser_use import Agent, BrowserSession, Tools
 from browser_use.dom.views import DEFAULT_INCLUDE_ATTRIBUTES
 
 from app.agents.extraction.prompt import SYSTEM_PROMPT, build_task_prompt
+from app.agents.run_guard import close_browser, run_guarded
 from app.config import get_settings
 from app.domain.workflows.models import Workflow, WorkflowSpec, WorkflowsResponse
 from app.domain.research.models import ResearchContext
@@ -60,24 +61,24 @@ async def run_extraction_agent(
     agent_kwargs["browser_session"] = browser_session
 
     agent = Agent(**agent_kwargs)
-    run_kwargs: dict = {}
-    if on_step_end:
-        run_kwargs["on_step_end"] = on_step_end
-    history = await agent.run(**run_kwargs)
+    try:
+        history = await run_guarded(agent, settings, on_step_end)
 
-    raw = history.final_result()
-    if not raw:
-        logger.warning(
-            "Extraction agent returned no result for workflow: %s", spec.name
-        )
-        return None
+        raw = history.final_result()
+        if not raw:
+            logger.warning(
+                "Extraction agent returned no result for workflow: %s", spec.name
+            )
+            return None
 
-    # Layer 2: Pydantic field validator runs inside model_validate_json
-    result = WorkflowsResponse.model_validate_json(raw)
+        # Layer 2: Pydantic field validator runs inside model_validate_json
+        result = WorkflowsResponse.model_validate_json(raw)
 
-    # Layer 3: post-processing validation (syntax + DOM presence)
-    session = browser_session or agent.browser_session
-    result = await validate_workflows(result, browser_session=session)
+        # Layer 3: post-processing validation (syntax + DOM presence)
+        session = browser_session or agent.browser_session
+        result = await validate_workflows(result, browser_session=session)
+    finally:
+        await close_browser(browser_session)
 
     if not result.workflows:
         logger.warning("No valid steps after validation for workflow: %s", spec.name)

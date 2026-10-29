@@ -44,6 +44,14 @@ def _get_research_llm(settings: Settings):
             google_api_key=settings.GEMINI_API_KEY,
         )
 
+    if settings.RESEARCH_PROVIDER == "openai":
+        from langchain_openai import ChatOpenAI
+
+        return ChatOpenAI(
+            model=settings.resolved_research_model,
+            api_key=settings.OPENAI_API_KEY,
+        )
+
     if settings.RESEARCH_PROVIDER == "minimax":
         # Return None — MiniMax is handled via direct HTTP call in
         # research_workflow to work around langchain-community's broken
@@ -126,6 +134,8 @@ async def research_workflow(
             ]
             response = await llm.ainvoke(messages)
             raw = response.content
+            if isinstance(raw, list):  # newer langchain returns content blocks
+                raw = "".join(b.get("text", "") if isinstance(b, dict) else str(b) for b in raw)
     except Exception:
         logger.exception("research LLM invoke failed")
         raise

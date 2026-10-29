@@ -70,7 +70,7 @@ uv run ruff format .
 |---|---|---|
 | `LLM_PROVIDER` | Yes | `browser-use`, `openai`, `anthropic`, or `gemini` |
 | `LLM_MODEL` | No | Override default model for the chosen provider |
-| `RESEARCH_PROVIDER` | No | `gemini` (default) or `minimax` |
+| `RESEARCH_PROVIDER` | No | `gemini` (default), `minimax`, or `openai` |
 | `RESEARCH_MODEL` | No | Override default research model |
 | `BROWSER_USE_API_KEY` | If provider=browser-use | API key for browser-use |
 | `OPENAI_API_KEY` | If provider=openai | OpenAI API key |

@@ -15,7 +15,7 @@ def get_llm(settings: Settings) -> BaseChatModel:
     if provider == "openai":
         from browser_use import ChatOpenAI
 
-        return ChatOpenAI(model=model)
+        return ChatOpenAI(model=model, api_key=settings.OPENAI_API_KEY)
 
     if provider == "anthropic":
         from browser_use import ChatAnthropic

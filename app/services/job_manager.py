@@ -5,9 +5,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
+from contextlib import aclosing
 from typing import Any
 
+from app.domain.workflows.events import done_event, error_event
 from app.services.query_stream import stream_query
+from app.services.storage_state import remove_storage_state
 
 logger = logging.getLogger(__name__)
 
@@ -24,24 +27,40 @@ def create_job(url: str, query: str, cookies_file: str | None = None) -> str:
         "subscribers": [],  # list of asyncio.Queue for each connected client
     }
 
-    asyncio.create_task(_run_job(job_id, url, query, cookies_file))
+    _jobs[job_id]["task"] = asyncio.create_task(_run_job(job_id, url, query, cookies_file))
     return job_id
+
+
+def cancel_job(job_id: str) -> bool:
+    """Stop a running job. Returns False if it was already finished."""
+    job = _jobs[job_id]
+    if job["status"] == "done":
+        return False
+    job["task"].cancel()
+    return True
+
+
+async def _publish(job: dict[str, Any], event: dict[str, Any]) -> None:
+    job["events"].append(event)
+    for q in job["subscribers"]:
+        await q.put(event)
 
 
 async def _run_job(job_id: str, url: str, query: str, cookies_file: str | None) -> None:
     job = _jobs[job_id]
     try:
-        async for event in stream_query(url, query, cookies_file):
-            job["events"].append(event)
-            for q in job["subscribers"]:
-                await q.put(event)
+        async with aclosing(stream_query(url, query, cookies_file)) as events:
+            async for event in events:
+                await _publish(job, event)
+    except asyncio.CancelledError:
+        logger.info("Job %s stopped by user", job_id)
+        await _publish(job, error_event("Stopped by user"))
+        await _publish(job, done_event())
     except Exception as exc:
         logger.exception("Job %s failed", job_id)
-        err = {"event": "error", "data": {"message": str(exc)}}
-        job["events"].append(err)
-        for q in job["subscribers"]:
-            await q.put(err)
+        await _publish(job, error_event(str(exc)))
     finally:
+        remove_storage_state(cookies_file)
         job["status"] = "done"
         for q in job["subscribers"]:
             await q.put(None)

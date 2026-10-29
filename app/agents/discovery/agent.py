@@ -6,6 +6,7 @@ from browser_use import Agent, BrowserSession
 from browser_use.dom.views import DEFAULT_INCLUDE_ATTRIBUTES
 
 from app.agents.discovery.prompt import SYSTEM_PROMPT, build_task_prompt
+from app.agents.run_guard import close_browser, run_guarded
 from app.config import get_settings
 from app.domain.workflows.models import DiscoveryResponse, WorkflowSpec
 from app.services.llm import get_llm
@@ -45,10 +46,10 @@ async def run_discovery_agent(
     agent_kwargs["browser_session"] = browser_session
 
     agent = Agent(**agent_kwargs)
-    run_kwargs: dict = {}
-    if on_step_end:
-        run_kwargs["on_step_end"] = on_step_end
-    history = await agent.run(**run_kwargs)
+    try:
+        history = await run_guarded(agent, settings, on_step_end)
+    finally:
+        await close_browser(browser_session)
 
     raw = history.final_result()
     if not raw:

@@ -1,6 +1,4 @@
-import json
 import logging
-import tempfile
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -8,6 +6,7 @@ from app.api.dependencies import get_workflow_repo
 from app.domain.workflows.models import CrawlResponse, QueryRequest
 from app.domain.workflows.ports import WorkflowRepository
 from app.services.query import run_query_agent
+from app.services.storage_state import remove_storage_state, write_storage_state
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -15,18 +14,8 @@ router = APIRouter()
 
 @router.post("/query", response_model=CrawlResponse)
 async def query(request: QueryRequest):
+    cookies_file = write_storage_state(request.cookies, request.origins)
     try:
-        cookies_file = None
-        if request.cookies:
-            storage_state = {
-                "cookies": request.cookies,
-                "origins": request.origins or [],
-            }
-            tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
-            json.dump(storage_state, tmp)
-            tmp.close()
-            cookies_file = tmp.name
-
         return await run_query_agent(
             str(request.url),
             request.query,
@@ -36,6 +25,8 @@ async def query(request: QueryRequest):
     except Exception as e:
         logger.exception("POST /query failed")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        remove_storage_state(cookies_file)
 
 
 @router.get("/workflows/{domain}")

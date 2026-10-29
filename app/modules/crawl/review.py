@@ -115,20 +115,18 @@ async def _call_research_llm(settings: Settings, user_content: str) -> str:
             settings,
         )
 
-    if settings.RESEARCH_PROVIDER == "gemini":
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        from langchain_core.messages import SystemMessage, HumanMessage
+    from langchain_core.messages import HumanMessage, SystemMessage
 
-        llm = ChatGoogleGenerativeAI(
-            model=settings.resolved_research_model,
-            google_api_key=settings.GEMINI_API_KEY,
-        )
-        response = await llm.ainvoke(
-            [
-                SystemMessage(content=_SYSTEM_PROMPT),
-                HumanMessage(content=user_content),
-            ]
-        )
-        return response.content
+    from app.modules.research.researcher import _get_research_llm
 
-    raise ValueError(f"Unknown research provider: {settings.RESEARCH_PROVIDER!r}")
+    llm = _get_research_llm(settings)
+    response = await llm.ainvoke(
+        [
+            SystemMessage(content=_SYSTEM_PROMPT),
+            HumanMessage(content=user_content),
+        ]
+    )
+    raw = response.content
+    if isinstance(raw, list):  # newer langchain returns content blocks
+        raw = "".join(b.get("text", "") if isinstance(b, dict) else str(b) for b in raw)
+    return raw
